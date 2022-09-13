@@ -18,8 +18,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>() {
     kotlinOptions.jvmTarget = "$JVM_LANGUAGE_LEVEL"
     kotlinOptions.freeCompilerArgs += listOf(
         "-Xjvm-default=all",
-        "-P",
-        "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=${libs.versions.kotlin.get()}", // compat with kotlin 1.7.20-RC
     )
 }
 
