@@ -8,7 +8,8 @@ jetbrains-compose = "1.2.0-alpha01-dev774"
 # Compose Compiler Version for Kotlin 1.7.20-RC acquired from https://androidx.dev/storage/compose-compiler/repository/
 compose-compiler = { module = "androidx.compose.compiler:compiler", version = "1.4.0-dev-k1.7.20-RC-a143c065804" }
 
-gradleplugin-kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-gradleplugin-jetbrains-compose = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "jetbrains-compose" }
+# Using <plugin id>:<plugin id>.gradle.plugin:<plugin version> notation
+gradleplugin-kotlin-jvm = { module = "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", version.ref = "kotlin" }
+gradleplugin-jetbrains-compose = { module = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin", version.ref = "jetbrains-compose" }
 
 [bundles]
