@@ -1,0 +1,14 @@
+[versions]
+jupiter = "5.9.0"
+kotlin = "1.7.20-RC"
+jetbrains-compose = "1.2.0-alpha01-dev774"
+
+
+[libraries]
+# Compose Compiler Version for Kotlin 1.7.20-RC acquired from https://androidx.dev/storage/compose-compiler/repository/
+compose-compiler = { module = "androidx.compose.compiler:compiler", version = "1.4.0-dev-k1.7.20-RC-a143c065804" }
+
+gradleplugin-kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+gradleplugin-jetbrains-compose = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "jetbrains-compose" }
+
+[bundles]
