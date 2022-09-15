@@ -1,0 +1,11 @@
+# Defines the implementations of `JavaVirtualMachine` as declared in
+# `gctoolkit-vertx!/module-info.java` for `gctoolkit-api` internals.
+# This is necessary because the gctoolkit jars are modularized, and as such the
+# gctoolkit exploits the `ServiceLoader` mechanism to load the implementations
+# declared in the `module-info.java` file. However, when these modularized are
+# used on the classpath, the `ServiceLoader` does not use the `module-info.java`,
+# and lookup for _provider-configuration files_ instead. Since gctoolkit does not
+# have one, it is necessary to create one.
+
+com.microsoft.gctoolkit.vertx.jvm.PreUnifiedJavaVirtualMachine
+com.microsoft.gctoolkit.vertx.jvm.UnifiedJavaVirtualMachine
