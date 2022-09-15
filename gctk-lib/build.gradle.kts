@@ -3,5 +3,6 @@ plugins {
 }
 
 dependencies {
+    api(libs.gctoolkit.api)
     implementation(libs.bundles.gctoolkit)
 }

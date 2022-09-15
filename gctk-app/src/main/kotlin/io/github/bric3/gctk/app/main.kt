@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -22,62 +25,106 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.microsoft.gctoolkit.io.SingleGCLogFile
+import io.github.bric3.gctk.Analyzer
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.awt.Component
+import java.io.File
+import java.nio.file.Path
 import javax.swing.*
+import javax.swing.filechooser.FileSystemView
 
-fun main() = application {
-    Window(
-        title = "GCTK",
-        state = rememberWindowState(size = DpSize(900.dp, 700.dp)),
-        onCloseRequest = ::exitApplication
-    ) {
-        val counter = remember { mutableStateOf(0) }
+fun main() {
+    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+    application {
+        val gcFilename = remember { mutableStateOf(null as Path?) }
 
-        val inc: () -> Unit = { counter.value++ }
-        val dec: () -> Unit = { counter.value-- }
-
-        Box(
-            modifier = Modifier.fillMaxWidth().height(60.dp).padding(top = 20.dp),
-            contentAlignment = Alignment.Center
+        Window(
+            title = """${if (gcFilename.value?.fileName != null) gcFilename.value?.fileName.toString() + " - " else ""}GCTK""",
+            state = rememberWindowState(size = DpSize(900.dp, 700.dp)),
+            onCloseRequest = ::exitApplication
         ) {
-            Text("Counter: ${counter.value}")
-        }
-
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                modifier = Modifier.padding(top = 80.dp, bottom = 20.dp)
-            ) {
-                Button("1. Compose Button: increment", inc)
-                Spacer(modifier = Modifier.height(20.dp))
-
-                SwingPanel(
-                    background = Color.White,
-                    modifier = Modifier.size(270.dp, 90.dp),
-                    factory = {
-                        JPanel().apply {
-                            layout = BoxLayout(this, BoxLayout.Y_AXIS)
-                            add(actionButton("1. Swing Button: decrement", dec))
-                            add(actionButton("2. Swing Button: decrement", dec))
-                            add(actionButton("3. Swing Button: decrement", dec))
-                        }
-                    },
-                    update = {
-                        // called when the composable state changes
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-                Button("2. Compose Button: increment", inc)
-            }
+            App(gcFilename)
         }
     }
 }
 
 @Composable
-private fun windowState() = rememberWindowState(size = DpSize(900.dp, 700.dp))
+fun App(gcFilePath: MutableState<Path?>) {
+    val counter = remember { mutableStateOf(0) }
+    val inc: () -> Unit = { counter.value++ }
+    val dec: () -> Unit = { counter.value-- }
+
+    MaterialTheme {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                value = if (gcFilePath.value != null) gcFilePath.value.toString() else "",
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Selected GC File") },
+                modifier = Modifier.padding(5.dp).fillMaxWidth(),
+                singleLine = true,
+                trailingIcon = {
+                    Button(
+                        onClick = {
+                            fileChooserDialog("Select GC File") {
+                                gcFilePath.value = it
+                                GlobalScope.launch {
+                                    Analyzer().analyze(SingleGCLogFile(it))
+                                }
+                            }
+                        },
+                        modifier = Modifier.padding(5.dp)
+                    ) {
+                        Text("Select GC File")
+                    }
+                }
+            )
+
+            Box(
+                modifier = Modifier.fillMaxWidth().height(60.dp).padding(top = 20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Counter: ${counter.value}")
+            }
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier.padding(top = 80.dp, bottom = 20.dp)
+                ) {
+                    Button("1. Compose Button: increment", inc)
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    SwingPanel(
+                        background = Color.White,
+                        modifier = Modifier.size(270.dp, 90.dp),
+                        factory = {
+                            JPanel().apply {
+                                layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                                add(actionButton("1. Swing Button: decrement", dec))
+                                add(actionButton("2. Swing Button: decrement", dec))
+                                add(actionButton("3. Swing Button: decrement", dec))
+                            }
+                        },
+                        update = {
+                            // called when the composable state changes
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Button("2. Compose Button: increment", inc)
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun Button(text: String = "", action: (() -> Unit)? = null) {
@@ -96,5 +143,27 @@ fun actionButton(
     return JButton(text).apply {
         alignmentX = Component.CENTER_ALIGNMENT
         addActionListener { action() }
+    }
+}
+
+/**
+ * Opens a file chooser dialog and returns a selected file path or null.
+ *
+ * @see https://github.com/JetBrains/compose-jb/issues/1003
+ */
+fun fileChooserDialog(
+    title: String,
+    onFileSelected: (Path) -> Unit,
+) {
+    val fileChooser = JFileChooser(FileSystemView.getFileSystemView()).apply {
+        currentDirectory = File(System.getProperty("user.dir"))
+        dialogTitle = title
+        fileSelectionMode = JFileChooser.FILES_ONLY
+        isAcceptAllFileFilterUsed = true
+        selectedFile = null
+    }
+
+    if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+        onFileSelected(fileChooser.selectedFile.toPath())
     }
 }
