@@ -1,6 +1,6 @@
 plugins {
     id("java-common-conventions")
-    kotlin("jvm")
+    id("kotlin-common-conventions")
     id("org.jetbrains.compose")
 }
 
@@ -12,13 +12,6 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>() {
-    kotlinOptions.jvmTarget = "$JVM_LANGUAGE_LEVEL"
-    kotlinOptions.freeCompilerArgs += listOf(
-        "-Xjvm-default=all",
-    )
 }
 
 // Substitute the compiler to make Compose work with Kotlin 1.7.20-RC

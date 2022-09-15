@@ -12,15 +12,6 @@ dependencies {
     }
 }
 
-testing {
-    suites {
-        @Suppress("UNUSED_VARIABLE")
-        val test by getting(JvmTestSuite::class) {
-            useJUnitJupiter(libs.versions.jupiter.get())
-        }
-    }
-}
-
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(JVM_LANGUAGE_LEVEL))
