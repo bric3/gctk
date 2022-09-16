@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test
 
 internal class AnalyzerTest {
     @Test
-    @Disabled
     fun `exercise analyzer with rotating gc logs`() {
         ProcessHandle.current().info().commandLine().ifPresent { println(it) }
         val rotatingGCLogFile = RotatingGCLogFile(TestLogFile("fixed-gc-logs-2020-05-29_18-13-46.log").logFilePath)

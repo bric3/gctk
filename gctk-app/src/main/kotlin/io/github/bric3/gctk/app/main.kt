@@ -25,18 +25,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import com.microsoft.gctoolkit.io.SingleGCLogFile
+import com.microsoft.gctoolkit.io.RotatingGCLogFile
 import io.github.bric3.gctk.Analyzer
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.awt.Component
 import java.io.File
 import java.nio.file.Path
+import java.util.Arrays
 import javax.swing.*
+import javax.swing.filechooser.FileFilter
 import javax.swing.filechooser.FileSystemView
 
+// In IntelliJ run with the gradle task `:gctk-app:run` otherwise
+// gradle's jvmArgs are not passed to the JVM
 fun main() {
+    ProcessHandle.current().info().command().ifPresent(::println)
+    ProcessHandle.current().info().arguments().stream().flatMap(Arrays::stream).forEach(::println)
     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+
     application {
         val gcFilename = remember { mutableStateOf(null as Path?) }
 
@@ -71,10 +78,10 @@ fun App(gcFilePath: MutableState<Path?>) {
                 trailingIcon = {
                     Button(
                         onClick = {
-                            fileChooserDialog("Select GC File") {
+                            gcLogFileChooserDialog("Select GC File") {
                                 gcFilePath.value = it
                                 GlobalScope.launch {
-                                    Analyzer().analyze(SingleGCLogFile(it))
+                                    Analyzer().analyze(RotatingGCLogFile(it))
                                 }
                             }
                         },
@@ -127,10 +134,10 @@ fun App(gcFilePath: MutableState<Path?>) {
 }
 
 @Composable
-fun Button(text: String = "", action: (() -> Unit)? = null) {
+fun Button(text: String = "", action: (() -> Unit)) {
     Button(
         modifier = Modifier.size(270.dp, 30.dp),
-        onClick = { action?.invoke() }
+        onClick = { action.invoke() }
     ) {
         Text(text)
     }
@@ -149,16 +156,54 @@ fun actionButton(
 /**
  * Opens a file chooser dialog and returns a selected file path or null.
  *
- * @see https://github.com/JetBrains/compose-jb/issues/1003
+ * @see [JetBrains/compose-jb#1003](https://github.com/JetBrains/compose-jb/issues/1003)
  */
-fun fileChooserDialog(
+fun gcLogFileChooserDialog(
     title: String,
     onFileSelected: (Path) -> Unit,
 ) {
     val fileChooser = JFileChooser(FileSystemView.getFileSystemView()).apply {
+        addChoosableFileFilter(object : FileFilter() {
+            var extensions = arrayOf(
+                "log",
+                "txt",
+                "log.0",
+                "log.1",
+                "log.2",
+                "log.3",
+                "log.4",
+                "log.5",
+                "log.6",
+                "log.7",
+                "log.8",
+                "log.9",
+                "zip",
+            )
+
+            override fun accept(f: File?): Boolean {
+                if (f == null) return false
+
+                if (f.isDirectory) {
+                    return true
+                }
+                val fileName = f.name
+                val i = fileName.lastIndexOf('.')
+
+                for (extension in extensions) {
+                    if (fileName.endsWith(extension, true)) {
+                        return true
+                    }
+                }
+                return false
+            }
+
+            override fun getDescription(): String {
+                return "GC Logs, (.log, .txt), directories, zipped logs"
+            }
+        })
         currentDirectory = File(System.getProperty("user.dir"))
         dialogTitle = title
-        fileSelectionMode = JFileChooser.FILES_ONLY
+        fileSelectionMode = JFileChooser.FILES_AND_DIRECTORIES
         isAcceptAllFileFilterUsed = true
         selectedFile = null
     }
