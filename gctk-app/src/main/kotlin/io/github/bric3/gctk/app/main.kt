@@ -25,13 +25,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.microsoft.gctoolkit.io.GCLogFile
 import com.microsoft.gctoolkit.io.RotatingGCLogFile
+import com.microsoft.gctoolkit.io.SingleGCLogFile
 import io.github.bric3.gctk.Analyzer
+import io.github.bric3.gctk.GCReport
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.awt.BorderLayout
 import java.awt.Component
 import java.io.File
-import java.nio.file.Path
 import java.util.Arrays
 import javax.swing.*
 import javax.swing.filechooser.FileFilter
@@ -45,10 +48,10 @@ fun main() {
     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
 
     application {
-        val gcFilename = remember { mutableStateOf(null as Path?) }
+        val gcFilename = remember { mutableStateOf(null as GCLogFile?) }
 
         Window(
-            title = """${if (gcFilename.value?.fileName != null) gcFilename.value?.fileName.toString() + " - " else ""}GCTK""",
+            title = """${extractFileName(gcFilename)}GCTK""",
             state = rememberWindowState(size = DpSize(900.dp, 700.dp)),
             onCloseRequest = ::exitApplication
         ) {
@@ -57,11 +60,30 @@ fun main() {
     }
 }
 
+private fun extractFileName(gcFilename: MutableState<GCLogFile?>): String {
+    val gcLogFile = gcFilename.value ?: return ""
+
+    return buildString {
+        append(gcLogFile.path.fileName)
+
+        val hasContainer = gcLogFile.metaData.isZip || gcLogFile.metaData.isGZip || gcLogFile.metaData.isDirectory
+        val numberOfFiles = gcLogFile.metaData.numberOfFiles
+        if (hasContainer || numberOfFiles > 1) {
+            append(" (")
+            append(numberOfFiles)
+            append(")")
+        }
+        append(" - ")
+    }
+}
+
 @Composable
-fun App(gcFilePath: MutableState<Path?>) {
+fun App(gcFilePath: MutableState<GCLogFile?>) {
     val counter = remember { mutableStateOf(0) }
     val inc: () -> Unit = { counter.value++ }
     val dec: () -> Unit = { counter.value-- }
+
+    val gcReport = remember { mutableStateOf(null as GCReport?) }
 
     MaterialTheme {
         Column(
@@ -73,7 +95,7 @@ fun App(gcFilePath: MutableState<Path?>) {
                 onValueChange = { },
                 readOnly = true,
                 label = { Text("Selected GC File") },
-                modifier = Modifier.padding(5.dp).fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 trailingIcon = {
                     Button(
@@ -81,7 +103,7 @@ fun App(gcFilePath: MutableState<Path?>) {
                             gcLogFileChooserDialog("Select GC File") {
                                 gcFilePath.value = it
                                 GlobalScope.launch {
-                                    Analyzer().analyze(RotatingGCLogFile(it))
+                                    gcReport.value = Analyzer().analyze(it)
                                 }
                             }
                         },
@@ -92,11 +114,20 @@ fun App(gcFilePath: MutableState<Path?>) {
                 }
             )
 
-            Box(
-                modifier = Modifier.fillMaxWidth().height(60.dp).padding(top = 20.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Counter: ${counter.value}")
+            if (gcReport.value != null) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(5.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(top = 20.dp, bottom = 20.dp)
+                    ) {
+                        Text("Command line : %s".format(gcReport.value?.commandLine ?: "N/A"))
+                        Text("Estimated JVM start : %s".format(gcReport.value?.estimatedJVMStartTime))
+                        Text("First event         : %s".format(gcReport.value?.timeOfFirstEvent))
+                        Text("Runtime duration    : %.4f".format(gcReport.value?.runtimeDuration))
+                        Text("GC                  : %s".format(gcReport.value?.gcName))
+                    }
+                }
             }
 
             Box(
@@ -160,8 +191,9 @@ fun actionButton(
  */
 fun gcLogFileChooserDialog(
     title: String,
-    onFileSelected: (Path) -> Unit,
+    onFileSelected: (GCLogFile) -> Unit,
 ) {
+    val gcFileOpenMode = ButtonGroup()
     val fileChooser = JFileChooser(FileSystemView.getFileSystemView()).apply {
         addChoosableFileFilter(object : FileFilter() {
             var extensions = arrayOf(
@@ -203,12 +235,40 @@ fun gcLogFileChooserDialog(
         })
         currentDirectory = File(System.getProperty("user.dir"))
         dialogTitle = title
-        fileSelectionMode = JFileChooser.FILES_AND_DIRECTORIES
         isAcceptAllFileFilterUsed = true
         selectedFile = null
+
+        val chooser = this
+        accessory = JPanel().also {
+            it.layout = BoxLayout(it, BoxLayout.Y_AXIS)
+
+            JToggleButton("Single file").apply {
+                actionCommand = "single"
+                addActionListener { chooser.fileSelectionMode = JFileChooser.FILES_ONLY }
+                gcFileOpenMode.add(this)
+                isSelected = true
+                chooser.fileSelectionMode = JFileChooser.FILES_ONLY
+
+                it.add(this, BorderLayout.NORTH)
+            }
+
+            JToggleButton("Rotating logs").apply {
+                actionCommand = "rotating"
+                addActionListener { chooser.fileSelectionMode = JFileChooser.FILES_AND_DIRECTORIES }
+                
+                gcFileOpenMode.add(this)
+                it.add(this, BorderLayout.CENTER)
+            }
+        }
     }
 
     if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-        onFileSelected(fileChooser.selectedFile.toPath())
+        val path = fileChooser.selectedFile.toPath()
+        val gcLogFile = when (gcFileOpenMode.selection.actionCommand) {
+            "single" -> SingleGCLogFile(path)
+            "rotating" -> RotatingGCLogFile(path)
+            else -> throw IllegalStateException("Unsupported file open mode")
+        }
+        onFileSelected(gcLogFile)
     }
 }
