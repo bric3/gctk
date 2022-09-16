@@ -20,6 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -121,11 +125,14 @@ fun App(gcFilePath: MutableState<GCLogFile?>) {
                     Column(
                         modifier = Modifier.padding(top = 20.dp, bottom = 20.dp)
                     ) {
-                        Text("Command line : %s".format(gcReport.value?.commandLine ?: "N/A"))
-                        Text("Estimated JVM start : %s".format(gcReport.value?.estimatedJVMStartTime))
-                        Text("First event         : %s".format(gcReport.value?.timeOfFirstEvent))
-                        Text("Runtime duration    : %.4f".format(gcReport.value?.runtimeDuration))
-                        Text("GC                  : %s".format(gcReport.value?.gcName))
+                        ReportFieldText("Command line", gcReport.value?.commandLine ?: "N/A")
+                        ReportFieldText("Estimated JVM start", gcReport.value?.estimatedJVMStartTime)
+                        ReportFieldText("First event", gcReport.value?.timeOfFirstEvent)
+                        ReportFieldText("Runtime duration", "%.4f".format(gcReport.value?.runtimeDuration))
+                        ReportFieldText("GC", gcReport.value?.gcName)
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
                     }
                 }
             }
@@ -162,6 +169,18 @@ fun App(gcFilePath: MutableState<GCLogFile?>) {
             }
         }
     }
+}
+
+@Composable
+private fun ReportFieldText(label: String, value: Any?, charEndPadding : Int = 20) {
+    val annotatedString = AnnotatedString.Builder().apply {
+        pushStyle(SpanStyle(fontFamily = FontFamily.Monospace))
+        append(label.padEnd(charEndPadding) + " : ")
+        pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+        append(value.toString())
+        pop()
+    }.toAnnotatedString()
+    return Text(annotatedString)
 }
 
 @Composable
