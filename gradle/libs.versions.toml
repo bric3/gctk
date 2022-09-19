@@ -2,7 +2,7 @@
 gctoolkit = "2.0.10"
 jupiter = "5.9.0"
 kotlin = "1.7.20-RC"
-jetbrains-compose = "1.2.0-alpha01-dev774"
+jetbrains-compose = "1.2.0-beta01"
 jfreechart = "1.5.3"
 
 [libraries]
