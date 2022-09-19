@@ -3,7 +3,7 @@ gctoolkit = "2.0.10"
 jupiter = "5.9.0"
 kotlin = "1.7.20-RC"
 jetbrains-compose = "1.2.0-alpha01-dev774"
-
+jfreechart = "1.5.3"
 
 [libraries]
 gctoolkit-api = { module = "com.microsoft.gctoolkit:gctoolkit-api", version.ref = "gctoolkit" }
@@ -11,6 +11,8 @@ gctoolkit-parser = { module = "com.microsoft.gctoolkit:gctoolkit-parser", versio
 gctoolkit-vertx = { module = "com.microsoft.gctoolkit:gctoolkit-vertx", version.ref = "gctoolkit" }
 gctoolkit-gclogs = { module = "com.microsoft.gctoolkit:gctoolkit-gclogs", version.ref = "gctoolkit" }
 gctoolkit-integration = { module = "com.microsoft.gctoolkit:gctoolkit-integration", version.ref = "gctoolkit" }
+
+jfree-chart = { module = "org.jfree:jfreechart", version.ref = "jfreechart" }
 
 # Compose Compiler Version for Kotlin 1.7.20-RC acquired from https://androidx.dev/storage/compose-compiler/repository/
 compose-compiler = { module = "androidx.compose.compiler:compiler", version = "1.4.0-dev-k1.7.20-RC-a143c065804" }

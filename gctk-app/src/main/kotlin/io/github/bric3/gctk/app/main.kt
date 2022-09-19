@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -36,7 +35,14 @@ import io.github.bric3.gctk.Analyzer
 import io.github.bric3.gctk.GCReport
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.jfree.chart.JFreeChart
+import org.jfree.chart.axis.DateAxis
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer
+import org.jfree.data.xy.XYDataItem
+import org.jfree.data.xy.XYSeries
+import org.jfree.data.xy.XYSeriesCollection
 import java.awt.BorderLayout
+import java.awt.Color
 import java.awt.Component
 import java.io.File
 import java.util.Arrays
@@ -83,10 +89,6 @@ private fun extractFileName(gcFilename: MutableState<GCLogFile?>): String {
 
 @Composable
 fun App(gcFilePath: MutableState<GCLogFile?>) {
-    val counter = remember { mutableStateOf(0) }
-    val inc: () -> Unit = { counter.value++ }
-    val dec: () -> Unit = { counter.value-- }
-
     val gcReport = remember { mutableStateOf(null as GCReport?) }
 
     MaterialTheme {
@@ -99,7 +101,7 @@ fun App(gcFilePath: MutableState<GCLogFile?>) {
                 onValueChange = { },
                 readOnly = true,
                 label = { Text("Selected GC File") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(5.dp),
                 singleLine = true,
                 trailingIcon = {
                     Button(
@@ -113,7 +115,7 @@ fun App(gcFilePath: MutableState<GCLogFile?>) {
                         },
                         modifier = Modifier.padding(5.dp)
                     ) {
-                        Text("Select GC File")
+                        Text("Open")
                     }
                 }
             )
@@ -133,42 +135,79 @@ fun App(gcFilePath: MutableState<GCLogFile?>) {
 
                         Spacer(modifier = Modifier.height(10.dp))
 
+                        SwingPanel(
+                            modifier = Modifier.fillMaxSize(),
+                            factory = {
+                                JPanel().apply {
+                                    layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                                }
+                            },
+                            update = displayReport(gcReport)
+                        )
                     }
-                }
-            }
-
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier.padding(top = 80.dp, bottom = 20.dp)
-                ) {
-                    Button("1. Compose Button: increment", inc)
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    SwingPanel(
-                        background = Color.White,
-                        modifier = Modifier.size(270.dp, 90.dp),
-                        factory = {
-                            JPanel().apply {
-                                layout = BoxLayout(this, BoxLayout.Y_AXIS)
-                                add(actionButton("1. Swing Button: decrement", dec))
-                                add(actionButton("2. Swing Button: decrement", dec))
-                                add(actionButton("3. Swing Button: decrement", dec))
-                            }
-                        },
-                        update = {
-                            // called when the composable state changes
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Button("2. Compose Button: increment", inc)
                 }
             }
         }
     }
+}
+
+fun displayReport(gcReportState: MutableState<GCReport?>): (JPanel) -> Unit {
+    return displayReportLambda@ {
+        it.removeAll()
+        val gcReport = gcReportState.value ?: return@displayReportLambda
+
+        val heapOccupancyAfterGC = gcReport.heapOccupancyAfterGC()
+
+        val convertedXYSeries = heapOccupancyAfterGC
+            .map { xyDataSet ->
+                XYSeries("Heap After GC").apply {
+                    xyDataSet.items.forEach { item -> add(XYDataItem(item.x, item.y)) }
+                }
+            }
+            .fold(XYSeriesCollection()) { acc, xySeries -> acc.apply { addSeries(xySeries) } }
+
+        val chartPanel = XYPlotViewFactory().apply {
+            title = "Heap occupancy after GC"
+            xAxisLabel = "Time"
+            yAxisLabel = "Occupancy"
+            xySeriesCollection = convertedXYSeries
+        }.makeChartPanel()
+
+        it.add(chartPanel)
+    }
+}
+
+fun formatPlot(chart: JFreeChart) {
+    var useDates = true
+
+    val plot = chart.xyPlot
+    if (useDates) {
+        val dateAxis = DateAxis()
+        plot.domainAxis = dateAxis
+    }
+    plot.backgroundPaint = Color.WHITE
+    plot.domainGridlinePaint = Color.GRAY
+    plot.rangeGridlinePaint = Color.GRAY
+    // if (this.properties.getLogDuration() != null) {
+    //     val end: Double
+    //     val start: Double
+    //     if (useDates) {
+    //         start = this.properties.getDateTimeMap().getDateStamp().getMillis()
+    //         end = this.properties.getDateTimeMap().getGcEndDateTime().getMillis()
+    //     } else {
+    //         start = this.properties.getDateTimeMap().getStartTime()
+    //         end = this.properties.getDateTimeMap().getLastKnownTime()
+    //     }
+    //     val margin = (end - start) * 0.02
+    //     plot.domainAxis.lowerBound = Math.max(0.0, start - margin)
+    //     plot.domainAxis.upperBound = end + margin
+    // }
+    val renderer = plot.renderer
+    if (renderer is XYLineAndShapeRenderer) {
+        renderer.drawOutlines = false
+    }
+    plot.domainAxis.isAutoRange = true
+    plot.rangeAxis.isAutoRange = true
 }
 
 @Composable
@@ -231,15 +270,13 @@ fun gcLogFileChooserDialog(
                 "zip",
             )
 
-            override fun accept(f: File?): Boolean {
-                if (f == null) return false
+            override fun accept(file: File?): Boolean {
+                if (file == null) return false
 
-                if (f.isDirectory) {
+                if (file.isDirectory) {
                     return true
                 }
-                val fileName = f.name
-                val i = fileName.lastIndexOf('.')
-
+                val fileName = file.name
                 for (extension in extensions) {
                     if (fileName.endsWith(extension, true)) {
                         return true

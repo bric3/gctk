@@ -4,6 +4,9 @@ plugins {
 
 dependencies {
     api(libs.gctoolkit.api)
+    api(libs.gctoolkit.integration) {
+        because("com.microsoft.gctoolkit.integration.collections.XYDataSet is used in the GCReport API")
+    }
     implementation(libs.bundles.gctoolkit)
 }
 
