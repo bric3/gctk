@@ -41,6 +41,7 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer
 import org.jfree.data.xy.XYDataItem
 import org.jfree.data.xy.XYSeries
 import org.jfree.data.xy.XYSeriesCollection
+import org.slf4j.bridge.SLF4JBridgeHandler
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
@@ -56,6 +57,9 @@ fun main() {
     ProcessHandle.current().info().command().ifPresent(::println)
     ProcessHandle.current().info().arguments().stream().flatMap(Arrays::stream).forEach(::println)
     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
 
     application {
         val gcFilename = remember { mutableStateOf(null as GCLogFile?) }

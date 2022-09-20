@@ -4,6 +4,8 @@ jupiter = "5.9.0"
 kotlin = "1.7.20-RC"
 jetbrains-compose = "1.2.0-beta01"
 jfreechart = "1.5.3"
+slf4j = "2.0.1"
+logback = "1.4.1"
 
 [libraries]
 gctoolkit-api = { module = "com.microsoft.gctoolkit:gctoolkit-api", version.ref = "gctoolkit" }
@@ -21,5 +23,9 @@ compose-compiler = { module = "androidx.compose.compiler:compiler", version = "1
 gradleplugin-kotlin-jvm = { module = "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", version.ref = "kotlin" }
 gradleplugin-jetbrains-compose = { module = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin", version.ref = "jetbrains-compose" }
 
+slf4j-julToSlf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
 [bundles]
 gctoolkit = [ "gctoolkit-api", "gctoolkit-parser", "gctoolkit-vertx", "gctoolkit-gclogs", "gctoolkit-integration" ]
+log = [ "slf4j-julToSlf4j", "logback-classic" ]

@@ -5,6 +5,7 @@ plugins {
 dependencies {
     implementation(project(":gctk-lib"))
     implementation(libs.jfree.chart)
+    implementation(libs.bundles.log)
 }
 
 compose.desktop {
