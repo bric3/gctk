@@ -4,7 +4,7 @@ jupiter = "5.9.0"
 kotlin = "1.7.21"
 jetbrains-compose = "1.2.1"
 jfreechart = "1.5.3"
-slf4j = "2.0.3"
+slf4j = "2.0.4"
 logback = "1.4.4"
 
 [libraries]
