@@ -1,7 +1,7 @@
 [versions]
 gctoolkit = "2.0.12"
 jupiter = "5.9.0"
-kotlin = "1.8.20"
+kotlin = "1.8.21"
 jetbrains-compose = "1.4.0"
 jfreechart = "1.5.4"
 slf4j = "2.0.7"
