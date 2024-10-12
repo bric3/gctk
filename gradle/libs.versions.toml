@@ -5,7 +5,7 @@ kotlin = "2.0.21"
 jetbrains-compose = "1.7.0+build1877-release-1.7"
 jfreechart = "1.5.5"
 slf4j = "2.0.16"
-logback = "1.5.8"
+logback = "1.5.10"
 
 [libraries]
 gctoolkit-api = { module = "com.microsoft.gctoolkit:gctoolkit-api", version.ref = "gctoolkit" }
