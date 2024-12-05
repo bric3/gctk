@@ -1,5 +1,5 @@
 [versions]
-gctoolkit = "3.0.4"
+gctoolkit = "3.1.2"
 jupiter = "5.9.0"
 kotlin = "2.0.21"
 jetbrains-compose = "1.7.1"
